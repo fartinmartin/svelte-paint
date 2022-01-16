@@ -1,5 +1,5 @@
 {
-  "name": "svelte-canvas",
+  "name": "svelte-paint",
   "version": "0.0.1",
   "scripts": {
     "dev": "svelte-kit dev",
@@ -10,7 +10,12 @@
   "devDependencies": {
     "@sveltejs/adapter-auto": "next",
     "@sveltejs/kit": "next",
+    "body-scroll-lock": "^4.0.0-beta.0",
     "svelte": "^3.44.0"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "resize-observer-polyfill": "^1.5.1",
+    "svelte-canvas": "^0.7.1"
+  }
 }

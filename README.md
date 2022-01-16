@@ -1,38 +1,25 @@
-# create-svelte
+# svelte-paint
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte);
+Hoping to combine (some of) the features of [`svelte-canvas`](https://www.npmjs.com/package/svelte-canvas), [`simple-drawing-board`](https://www.npmjs.com/package/simple-drawing-board), and [`vb-canvas`](https://www.npmjs.com/package/vb-canvas).
 
-## Creating a project
+## Feature list
 
-If you're seeing this, you've probably already done this step. Congrats!
+### `svelte-canvas`
 
-```bash
-# create a new project in the current directory
-npm init svelte@next
+- [x] reactive canvas rendering
 
-# create a new project in my-app
-npm init svelte@next my-app
-```
+### `simple-drawing-board`
 
-> Note: the `@next` is temporary
+- [ ] brush api
+- [ ] erase mode
+- [ ] toDataURL
+- [ ] history
 
-## Developing
+### `vb-canvas`
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+- [ ] ResizeObserver for responsive canvas
 
-```bash
-npm run dev
+### `svelte-paint`
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-Before creating a production version of your app, install an [adapter](https://kit.svelte.dev/docs#adapters) for your target environment. Then:
-
-```bash
-npm run build
-```
-
-> You can preview the built app with `npm run preview`, regardless of whether you installed an adapter. This should _not_ be used to serve your app in production.
+- [ ] fill/paint bucket mode
+- [ ] save "project" file (aka path(s) data)
