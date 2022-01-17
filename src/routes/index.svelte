@@ -5,6 +5,8 @@
   import Debug from "../dev/Debug.svelte";
   import ControlBar from "../dev/ControlBar.svelte";
   import Nav from "../dev/Nav.svelte";
+  import { size } from "lodash-es";
+  import { get } from "svelte/store";
 
   let canvas;
 
@@ -29,6 +31,13 @@
   bind:this={canvas}
 />
 
+<button on:click={() => canvas.setMode("draw")}>draw</button>
+<button on:click={() => canvas.setMode("erase")}>erase</button>
+<button on:click={() => canvas.setMode("fill")}>fill</button>
+<button on:click={() => canvas.setSize(5)}>size 5</button>
+<button on:click={canvas.decrementSize}>size -</button>
+<button on:click={canvas.incrementSize}>size +</button>
+<button on:click={() => canvas.setColor("blue")}>blue</button>
 <button on:click={canvas.clear}>clear</button>
 
 <!-- <ControlBar
