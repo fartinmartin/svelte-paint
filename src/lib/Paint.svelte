@@ -1,32 +1,32 @@
 <script>
   import { Canvas, Layer } from "svelte-canvas";
-  import {
-    getInputCoords,
-    getMidInputCoords,
-    getWindowToCanvas,
-  } from "./utils";
+  import getInputCoords from "./utils/getInputCoords";
+  import getMidInputCoords from "./utils/getMidInputCoords";
 
-  export let width,
-    height,
-    size = "15",
+  // svelte-canvas api pass through (except autoclear)
+  export let width, height, style, pixelRatio, getCanvas, getContext, redraw;
+
+  // svelte-paint api
+  export let size = "10",
     color = "tomato",
     mode = "draw", // "draw" | "erase" | "fill"
-    cap = "round",
-    isDrawing,
+    cap = "round";
+  // responsive // TODO: a toggle for ResizeObserver functionality?
+  // playback // TODO: how will this work
+
+  // svelte-paint private vars
+  export let isDrawing,
+    currentPath = [],
     paths = [],
     coords = {
       old: { x: 0, y: 0 },
       oldMid: { x: 0, y: 0 },
       current: { x: 0, y: 0 },
-    },
-    style;
-  // TODO: "presentation" mode? where paths are provided and interaction is not allowed
+    };
 
   $: aspectRatio = width / height;
-  // $: isSameCoords =
-  //   coords.old.x === coords.current.x && coords.old.y === coords.current.y;
-
-  export let getCanvas, getContext, redraw;
+  $: isSameCoords =
+    coords.old.x === coords.current.x && coords.old.y === coords.current.y;
 
   // set mouse state
   const inputDown = () => {
@@ -84,6 +84,7 @@
   {width}
   {height}
   {style}
+  {pixelRatio}
   autoclear={false}
   bind:getCanvas
   bind:getContext
