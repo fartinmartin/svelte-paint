@@ -1,21 +1,28 @@
+<svelte:options accessors />
+
 <script>
+  import { onMount } from "svelte";
+
   import { Canvas, Layer } from "svelte-canvas";
   import getInputCoords from "./utils/getInputCoords";
   import getMidInputCoords from "./utils/getMidInputCoords";
 
-  // svelte-canvas api pass through (except autoclear)
-  export let width, height, style, pixelRatio, getCanvas, getContext, redraw;
+  // svelte-canvas api pass-through (except autoclear)
+  export let width,
+    height,
+    pixelRatio,
+    style,
+    getCanvas,
+    getContext,
+    redraw,
+    setup;
 
-  // svelte-paint api
-  export let size = "10",
+  // svelte-paint
+  let size = 10,
     color = "tomato",
     mode = "draw", // "draw" | "erase" | "fill"
-    cap = "round";
-  // responsive // TODO: a toggle for ResizeObserver functionality?
-  // playback // TODO: how will this work
-
-  // svelte-paint private vars
-  export let isDrawing,
+    cap = "round",
+    isDrawing,
     currentPath = [],
     paths = [],
     coords = {
@@ -28,7 +35,14 @@
   $: isSameCoords =
     coords.old.x === coords.current.x && coords.old.y === coords.current.y;
 
-  // set mouse state
+  // exposed methods
+  export const clear = () => {
+    const ctx = getContext();
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    savePath({ mode: "clear", coords: [{ x: 0, y: 0 }] });
+  };
+
+  // set drawing state and dispatch saves to history
   const inputDown = () => {
     isDrawing = true;
     coords.old = coords.oldMid = coords.current;
@@ -48,7 +62,11 @@
     isDrawing = false;
   };
 
-  const savePath = () => paths.push(currentPath);
+  // internal methods
+  const savePath = (path) => {
+    if (path) paths.push(path);
+    // otherwise, create path
+  };
 
   $: render = ({ context: ctx }) => {
     if (!isDrawing) return;
@@ -72,9 +90,11 @@
         coords.oldMid.y
       );
       ctx.stroke();
+    } else {
+      console.log("fill mode", coords.current);
     }
 
-    // why does this happen here, and not in an event listener? bc it has to happen after the drawing?
+    // why does this happen here, and not in an input up/down event listener? bc it has to happen after the drawing? bc we need access to currentMid?
     coords.old = coords.current;
     coords.oldMid = currentMid;
   };
@@ -83,8 +103,8 @@
 <Canvas
   {width}
   {height}
-  {style}
   {pixelRatio}
+  {style}
   autoclear={false}
   bind:getCanvas
   bind:getContext
@@ -99,5 +119,5 @@
   on:touchcancel={inputCancel}
   on:gesturestart={inputCancel}
 >
-  <Layer {render} />
+  <Layer {setup} {render} />
 </Canvas>

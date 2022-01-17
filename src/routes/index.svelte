@@ -6,46 +6,32 @@
   import ControlBar from "../dev/ControlBar.svelte";
   import Nav from "../dev/Nav.svelte";
 
-  let getCanvas,
-    coords,
-    paths,
-    size,
-    color,
-    mode,
-    cap,
-    clear,
-    undo,
-    redo,
-    saveProject,
-    saveImage;
+  let canvas;
 
-  $: brush = { size, color, mode, cap };
+  // $: brush = {
+  //   size: paint.getSize(),
+  //   color: paint.getColor(),
+  //   mode: paint.getMode(),
+  //   cap: paint.getCap(),
+  // };
 
   // for drawing on mobile/iOS
-  onMount(() => disableBodyScroll(getCanvas()));
+  onMount(() => disableBodyScroll(canvas.getCanvas()));
   onDestroy(clearAllBodyScrollLocks);
 </script>
 
 <Nav />
 
 <Paint
-  width={100}
+  width={300}
   height={100}
-  responsive
   style="outline: 1px solid tomato;"
-  bind:getCanvas
-  bind:coords
-  bind:paths
-  bind:size
-  bind:color
-  bind:mode
-  bind:cap
-  bind:clear
-  bind:undo
-  bind:redo
+  bind:this={canvas}
 />
 
-<ControlBar
+<button on:click={canvas.clear}>clear</button>
+
+<!-- <ControlBar
   on:mode={(m) => (mode = m.detail)}
   on:sizeDec={() => size--}
   on:sizeInc={() => size++}
@@ -61,6 +47,6 @@
   on:playProject={() => {}}
   on:pauseProject={() => {}}
   on:runContextCB={() => {}}
-/>
+/> -->
 
-<Debug {coords} {paths} {brush} />
+<!-- <Debug {coords} {paths} {brush} /> -->
