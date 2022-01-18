@@ -1,54 +1,135 @@
-<svelte:options accessors />
-
 <script>
+  import { createEventDispatcher } from "svelte";
   import { Canvas, Layer } from "svelte-canvas";
-  import { coords, isDrawing, mode, size, cap, color, mid } from "./stores";
-  import getMidInputCoords from "./utils/getMidInputCoords";
-  import { down, up, move, cancel } from "./utils/inputEvents";
+  import getInputCoords from "./utils/getInputCoords";
+  import getMidCoords from "./utils/getMidCoords";
+  import { render as renderFn } from "./utils/render";
 
   // svelte-canvas api pass-through (except autoclear)
-  export let width,
-    height,
-    pixelRatio,
-    style,
-    getCanvas,
-    getContext,
-    redraw,
-    setup;
+  export let sc, width, height, pixelRatio, style, setup;
+  $: render = (p) => renderFn(p, { isDrawing, coords, mode, size, cap, color });
 
-  // $: aspectRatio = width / height;
+  // svelte-paint settings
+  let mode = "draw"; // "draw" | "erase" | "fill" | "clear"
+  let size = 10;
+  let cap = "round"; // "round" | "butt" | "square"
+  let color = "tomato";
 
-  $: render = ({ context: ctx }) => {
-    if (!$isDrawing) return;
-
-    // const currentMid = getMidInputCoords($coords.old, $coords.cur);
-
-    if ($mode !== "fill") {
-      ctx.globalCompositeOperation =
-        $mode === "erase" ? "destination-out" : "source-over";
-
-      ctx.lineWidth = $size;
-      ctx.lineCap = $cap;
-      ctx.strokeStyle = $color;
-
-      ctx.beginPath();
-      ctx.moveTo($mid.x, $mid.y);
-      ctx.quadraticCurveTo(
-        $coords.old.x,
-        $coords.old.y,
-        $coords.mid.x,
-        $coords.mid.y
-      );
-
-      ctx.stroke();
-    } else {
-      console.log("fill mode", $coords.cur);
-    }
-
-    // why does this happen here, and not in an input up/down event listener? bc it has to happen after the drawing? bc we need access to currentMid?
-    coords.updateOld($coords.cur);
-    coords.updateMid($mid);
+  // svelte-paint internals
+  let currentPath = [];
+  let currentStep = 0;
+  let paths = [];
+  let isDrawing = false;
+  let coords = {
+    old: { x: 0, y: 0 },
+    dim: { x: 0, y: 0 }, // dumb name for old mid
+    mid: { x: 0, y: 0 }, // I'm wondering a) how necessary is it to use quadraticCurveTo() and therefor collecting mid values and b) how much extra cost is it to collect this data?
+    cur: { x: 0, y: 0 }, //     (cont.) especially if it's resulting in worse line quality. compare svelte-paint (gaps in lines) to ecc (not so many gaps, eh?)
   };
+
+  // $: isSameCoords = coords.old === coords.cur; // haven't used this yet but I feel like I'll need it? 🤔
+  $: payload = { mode, size, cap, color, currentPath, currentStep };
+  // export canUndo and canRedo ??? (also use them in the undo() and redo() fns)
+
+  // svelte-paint input events
+  const dispatch = createEventDispatcher();
+
+  const down = (e) => {
+    isDrawing = true;
+    coords.old = coords.mid = coords.dim = coords.cur = getInputCoords(e);
+    if (mode === "fill") currentPath = [...currentPath, coords]; // instead of currentPath.push(coords)
+    dispatch("start", { text: "start!", payload });
+  };
+
+  const move = (e) => {
+    if (!isDrawing) return;
+    coords.old = coords.cur;
+    coords.dim = coords.mid;
+    coords.cur = getInputCoords(e);
+    coords.mid = getMidCoords(coords.old, coords.mid);
+    currentPath = [...currentPath, coords]; // instead of currentPath.push(coords)
+    dispatch("draw", { text: "draw!", payload });
+  };
+
+  const up = () => {
+    isDrawing = false;
+    savePath();
+    dispatch("end", { text: "end!", payload });
+  };
+
+  const cancel = () => {
+    if (!isDrawing) return;
+    isDrawing = false;
+    savePath();
+    dispatch("cancel", { text: "cancel!", payload });
+  };
+
+  // svelte-paint internal methods
+  const savePath = () => {
+    paths = [...paths, payload]; // instead of paths.push(payload)
+    currentStep++;
+    // console.log(currentStep, payload);
+    // console.log(paths);
+    dispatch("savePath", { text: "savePath!", payload });
+  };
+
+  const clearCanvas = () => {
+    const ctx = sc.getContext();
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  };
+
+  const drawPathsToCurrentStepOnCanvas = () => {
+    clearCanvas();
+    // svelte-canvas render fn?
+  };
+
+  // svelte-paint external methods
+  export const setMode = (m) => (mode = m);
+  export const setColor = (c) => (color = c);
+
+  export const setSize = (s) => (size = s);
+  export const decSize = () => size--;
+  export const incSize = () => size++;
+
+  export const clear = () => {
+    clearCanvas();
+    savePath("clear");
+  };
+
+  export const undo = () => {
+    if (currentStep === 0) return;
+    currentStep--;
+    // drawPathsToCurrentStepOnCanvas()
+  };
+
+  export const redo = () => {
+    if (currentStep >= paths.length - 1) return; // could be off by +/- 1 here 😬
+    currentStep++;
+    // drawPathsToCurrentStepOnCanvas()
+  };
+
+  export const save = () => {
+    return { paths, state: { ...payload } };
+  };
+
+  export const load = (pkg) => {
+    // validate pkg, then:
+    paths = pkg.paths;
+    mode = pkg.mode;
+    size = pkg.size;
+    cap = pkg.cap;
+    color = pkg.color;
+    currentPath = pkg.currentPath;
+    currentStep = pkg.currentStep;
+    // drawPathsToCurrentStepOnCanvas()
+  };
+
+  export const toDataURL = ({ type, quality } = {}) => {
+    return sc.getCanvas().toDataURL(type, quality);
+  };
+
+  export const play = () => {};
+  export const pause = () => {};
 </script>
 
 <Canvas
@@ -57,20 +138,18 @@
   {pixelRatio}
   {style}
   autoclear={false}
-  bind:getCanvas
-  bind:getContext
-  bind:redraw
+  bind:this={sc}
   on:mousedown={down}
-  on:mousemove={move}
-  on:mouseup={up}
-  on:mouseout={cancel}
   on:touchstart={down}
+  on:mousemove={move}
   on:touchmove={move}
+  on:mouseup={up}
   on:touchend={up}
+  on:mouseout={cancel}
   on:touchcancel={cancel}
   on:gesturestart={cancel}
 >
   <Layer {setup} {render} />
 </Canvas>
 
-<pre>{JSON.stringify($coords, null, 2)}</pre>
+<pre>isDrawing: {isDrawing}</pre>

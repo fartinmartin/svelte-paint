@@ -1,35 +1,27 @@
-// // ⚠️ not working :(
+export const render = (
+  { context: ctx },
+  { isDrawing, coords, mode, size, cap, color }
+) => {
+  if (!isDrawing) return;
 
-// import { cap, color, size, isDrawing, mode } from "$lib/stores";
-// import { coordsCurrent, coordsOld, coordsOldMid } from "$lib/stores/mouse";
-// import { get } from "svelte/store";
+  if (mode !== "fill") {
+    ctx.globalCompositeOperation =
+      mode === "erase" ? "destination-out" : "source-over";
 
-// export const render = ({ context: ctx }) => {
-//   console.log("hi");
-//   if (!get(isDrawing)) return;
+    ctx.lineWidth = size;
+    ctx.lineCap = cap;
+    ctx.strokeStyle = color;
 
-//   const old = get(coordsOld);
-//   const oldMid = get(coordsOldMid);
-//   const current = get(coordsCurrent);
-//   const currentMid = getMidInputCoords(old, current);
-
-//   if (get(mode) !== "fill") {
-//     ctx.globalCompositeOperation =
-//       get(mode) === "erase" ? "destination-out" : "source-over";
-
-//     ctx.lineWidth = get(size);
-//     ctx.lineCap = get(cap);
-//     ctx.strokeStyle = get(color);
-
-//     ctx.beginPath();
-//     ctx.moveTo(currentMid.x, currentMid.y);
-//     ctx.quadraticCurveTo(old.x, old.y, oldMid.x, oldMid.y);
-//     ctx.stroke();
-//   } else {
-//     console.log("fill mode", current);
-//   }
-
-//   // why does this happen here, and not in an input up/down event listener? bc it has to happen after the drawing? bc we need access to currentMid?
-//   coordsOld.update((n) => (n = get(coordsCurrent)));
-//   coordsOldMid.update((n) => (n = currentMid));
-// };
+    ctx.beginPath();
+    ctx.moveTo(coords.mid.x, coords.mid.y);
+    ctx.quadraticCurveTo(
+      coords.old.x,
+      coords.old.y,
+      coords.dim.x,
+      coords.dim.y
+    );
+    ctx.stroke();
+  } else {
+    // console.log("fill mode", coords.cur);
+  }
+};
