@@ -86,6 +86,7 @@
   // svelte-paint external methods
   export const setMode = (m) => (mode = m);
   export const setColor = (c) => (color = c);
+  export const setCap = (c) => (cap = c);
 
   export const setSize = (s) => (size = s);
   export const decSize = () => size--;
@@ -105,6 +106,13 @@
   export const redo = () => {
     if (currentStep >= paths.length - 1) return; // could be off by +/- 1 here 😬
     currentStep++;
+    // drawPathsToCurrentStepOnCanvas()
+  };
+
+  export const goto = (step) => {
+    if (step > currentStep) return;
+    if (step < 0) return; // or is it `1`?
+    currentStep = step;
     // drawPathsToCurrentStepOnCanvas()
   };
 
