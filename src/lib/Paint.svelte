@@ -10,7 +10,16 @@
   // svelte-canvas api pass-through (except autoclear)
   export let sc, width, height, pixelRatio, style, setup;
   $: render = (p) =>
-    renderFn(p, { isDrawing, coords, mode, size, cap, color, cords });
+    renderFn(p, {
+      isDisabled,
+      isDrawing,
+      brushHasMoved,
+      points,
+      mode,
+      size,
+      cap,
+      color,
+    });
 
   // svelte-paint brush settings
   let mode = "draw"; // "draw" | "erase" | "fill" | "clear"
@@ -22,20 +31,23 @@
   let currentPath = [];
   let currentStep = 0;
   let paths = [];
-  let isDrawing = false;
+  // let isDrawing = false;
   let isPlaying = false;
-  let coords = {
-    old: { x: 0, y: 0 },
-    dim: { x: 0, y: 0 }, // dumb name for old mid
-    mid: { x: 0, y: 0 }, // I'm wondering a) how necessary is it to use quadraticCurveTo() and therefor collecting mid values and b) how much extra cost is it to collect this data?
-    cur: { x: 0, y: 0 }, //     (cont.) especially if it's resulting in worse line quality. compare svelte-paint (gaps in lines) to ecc (not so many gaps, eh?)
-  };
-  let cords = {
-    old: { x: 0, y: 0 },
-    mid: { x: 0, y: 0 },
-    cur: { x: 0, y: 0 },
-  };
-  let cP = [];
+  // let coords = {
+  //   old: { x: 0, y: 0 },
+  //   dim: { x: 0, y: 0 }, // dumb name for old mid
+  //   mid: { x: 0, y: 0 }, // I'm wondering a) how necessary is it to use quadraticCurveTo() and therefor collecting mid values and b) how much extra cost is it to collect this data?
+  //   cur: { x: 0, y: 0 }, //     (cont.) especially if it's resulting in worse line quality. compare svelte-paint (gaps in lines) to ecc (not so many gaps, eh?)
+  // };
+
+  // lazy-brush
+  let points = [];
+  let isDisabled = false;
+  let isDrawing = false;
+  let isPressing = false;
+  let mouseHasMoved = false;
+  let brushHasMoved = false;
+  let coords = { x: 0, y: 0 };
 
   // $: isSameCoords = coords.old === coords.cur; // haven't used this yet but I feel like I'll need it? 🤔
   $: payload = { mode, size, cap, color, currentPath, currentStep };
@@ -52,36 +64,94 @@
   const dispatch = createEventDispatcher();
 
   const down = (e) => {
-    if (isPlaying) return;
-    isDrawing = true;
-    coords.old = coords.mid = coords.dim = coords.cur = getInputCoords(e);
-    if (mode === "fill") currentPath = [...currentPath, coords]; // instead of currentPath.push(coords)
-    dispatch("start", { text: "start!", payload });
+    e.preventDefault();
+
+    // isDrawing = true;
+    isPressing = true;
+
+    coords = getInputCoords(e);
+    lazy.update(coords, { both: true });
+
+    mouseHasMoved = true;
+    brushHasMoved = lazy.brushHasMoved();
+  };
+
+  const up = (e) => {
+    e.preventDefault();
+
+    isDrawing = false;
+    isPressing = false;
+    points.length = 0;
+
+    const brush = lazy.getBrushCoordinates();
+    lazy.update(brush, { both: true });
+
+    mouseHasMoved = true;
+    brushHasMoved = lazy.brushHasMoved();
   };
 
   const move = (e) => {
-    if (isPlaying) return;
-    if (!isDrawing) return;
-    lazy.update(getInputCoords(e));
-    cords.old = cords.cur;
-    cords.cur = lazy.getBrushCoordinates();
-    cords.mid = getMidCoords(cords.old, cords.cur);
-    console.log(cords);
-    // if (isTouch()) e.preventDefault();
-    coords.old = coords.cur;
-    coords.dim = coords.mid;
-    coords.cur = getInputCoords(e);
-    coords.mid = getMidCoords(coords.old, coords.mid);
-    currentPath = [...currentPath, coords]; // instead of currentPath.push(coords)
-    dispatch("draw", { text: "draw!", payload });
+    e.preventDefault();
+
+    coords = getInputCoords(e);
+    const hasChanged = lazy.update(coords);
+    isDisabled = !lazy.isEnabled();
+
+    // console.log(isPressing && hasChanged && !isDrawing);
+    // console.log(isDisabled && isPressing);
+    // console.log("====================================");
+    // console.log(isDrawing);
+    // console.log(lazy.brushHasMoved() || isDisabled);
+    // console.log("====================================");
+
+    if (
+      (isPressing && hasChanged && !isDrawing) ||
+      (isDisabled && isPressing)
+    ) {
+      console.log(points);
+      isDrawing = true;
+      points = [...points, lazy.brush.toObject()];
+    }
+
+    if (isDrawing && (lazy.brushHasMoved() || isDisabled)) {
+      points = [...points, lazy.brush.toObject()];
+    }
+
+    mouseHasMoved = true;
+    brushHasMoved = lazy.brushHasMoved();
   };
 
-  const up = () => {
-    if (isPlaying) return;
-    isDrawing = false;
-    savePath();
-    dispatch("end", { text: "end!", payload });
-  };
+  // const down = (e) => {
+  //   if (isPlaying) return;
+  //   isDrawing = true;
+  //   coords.old = coords.mid = coords.dim = coords.cur = getInputCoords(e);
+  //   if (mode === "fill") currentPath = [...currentPath, coords]; // instead of currentPath.push(coords)
+  //   dispatch("start", { text: "start!", payload });
+  // };
+
+  // const move = (e) => {
+  //   if (isPlaying) return;
+  //   if (!isDrawing) return;
+  //   lazy.update(getInputCoords(e));
+  //   cords.old = cords.cur;
+  //   cords.cur = lazy.getBrushCoordinates();
+  //   cords.mid = getMidCoords(cords.old, cords.cur);
+  //   console.log(cords);
+  //   // if (isTouch()) e.preventDefault();
+  //   coords.old = coords.cur;
+  //   coords.dim = coords.mid;
+  //   coords.cur = getInputCoords(e);
+  //   coords.mid = getMidCoords(coords.old, coords.mid);
+  //   currentPath = [...currentPath, coords]; // instead of currentPath.push(coords)
+  //   dispatch("draw", { text: "draw!", payload });
+  // };
+
+  // const up = () => {
+  //   if (isPlaying) return;
+  //   isDrawing = false;
+  //   savePath();
+  //   dispatch("end", { text: "end!", payload });
+  // };
 
   const cancel = () => {
     if (isPlaying) return;
@@ -163,35 +233,7 @@
     return sc.getCanvas().toDataURL(type, quality);
   };
 
-  export const play = () => {
-    // obvi just testing at the moment..
-    isDrawing = !isDrawing;
-    isPlaying = !isPlaying;
-
-    let testPath = [
-      randomCoords(),
-      randomCoords(),
-      randomCoords(),
-      randomCoords(),
-    ];
-
-    for (let i = 0; i < testPath.length; i++) {
-      coords = testPath[i];
-      console.log(coords); // doesn't work :/
-    }
-
-    function randomCoords() {
-      return {
-        old: { x: Math.random() * width, y: Math.random() * height },
-        dim: { x: Math.random() * width, y: Math.random() * height },
-        mid: { x: Math.random() * width, y: Math.random() * height },
-        cur: { x: Math.random() * width, y: Math.random() * height },
-      };
-    }
-
-    // isDrawing = false;
-  };
-
+  export const play = () => {};
   export const pause = () => {};
 </script>
 
@@ -218,5 +260,6 @@
 <pre
   style="text-align: center;">isPlaying: {isPlaying} | isDrawing: {isDrawing} | paths: {currentStep} / {paths.length} | mode: {mode} | size: {size} | color: {color} | cap: {cap}</pre>
 
-<pre>{JSON.stringify(coords.cur)}</pre>
+<pre>{points.length}</pre>
+<pre>{JSON.stringify(coords)}</pre>
 <!-- <pre>{JSON.stringify(cords)}</pre> -->

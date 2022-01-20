@@ -38,22 +38,3 @@ const move = (e) => {
 
   mouseHasMoved = true;
 };
-
-// put in render loop?
-if (isDrawing && (lazy.brushHasMoved() || isDisabled)) {
-  let p1 = points[0]; // cur?
-  let p2 = points[1]; // old?
-
-  ctx.moveTo(p2.x, p2.y);
-  ctx.beginPath();
-
-  for (let i = 1, len = points.length; i < len; i++) {
-    const midPoint = midPointBtw(p1, p2);
-    ctx.quadraticCurveTo(p1.x, p1.y, midPoint.x, midPoint.y);
-    p1 = points[i];
-    p2 = points[i + 1];
-  }
-
-  ctx.lineTo(p1.x, p1.y);
-  ctx.stroke();
-}

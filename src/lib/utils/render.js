@@ -1,6 +1,8 @@
+import getMidCoords from "./getMidCoords";
+
 export const render = (
   { context: ctx },
-  { isDrawing, coords, mode, size, cap, color, cords }
+  { isDisabled, isDrawing, brushHasMoved, points, mode, size, cap, color }
 ) => {
   if (!isDrawing) return;
 
@@ -12,37 +14,31 @@ export const render = (
     ctx.lineCap = cap;
     ctx.strokeStyle = color;
 
-    ctx.beginPath();
+    if (isDrawing && (brushHasMoved || isDisabled) && points.length >= 2) {
+      let p1 = points[0]; // cur?
+      let p2 = points[1]; // old?
 
-    ctx.moveTo(coords.old.x, coords.old.y);
-    ctx.lineTo(coords.cur.x, coords.cur.y);
+      ctx.moveTo(p2.x, p2.y);
+      ctx.beginPath();
 
-    // ctx.moveTo(coords.old.x, coords.old.y);
-    // ctx.quadraticCurveTo(
-    //   coords.mid.x,
-    //   coords.mid.y,
-    //   coords.cur.x,
-    //   coords.cur.y
-    // );
-    ctx.stroke();
-  }
-  if (mode !== "fill") {
-    ctx.globalCompositeOperation =
-      mode === "erase" ? "destination-out" : "source-over";
+      for (let i = 1, len = points.length; i < len; i++) {
+        const midPoint = midPointBtw(p1, p2);
+        ctx.quadraticCurveTo(p1.x, p1.y, midPoint.x, midPoint.y);
+        p1 = points[i];
+        p2 = points[i + 1];
+      }
 
-    ctx.lineWidth = 10;
-    ctx.lineCap = cap;
-    ctx.strokeStyle = "blue";
-
-    ctx.beginPath();
-
-    // ctx.moveTo(cords.old.x, cords.old.y);
-    // // ctx.lineTo(cords.cur.x, cords.cur.y);
-
-    ctx.moveTo(cords.old.x, cords.old.y);
-    ctx.quadraticCurveTo(cords.mid.x, cords.mid.y, cords.cur.x, cords.cur.y);
-    ctx.stroke();
+      // ctx.lineTo(p1.x, p1.y);
+      ctx.stroke();
+    }
   } else {
     // console.log("fill mode", coords.cur);
   }
 };
+
+function midPointBtw(p1, p2) {
+  return {
+    x: p1.x + (p2.x - p1.x) / 2,
+    y: p1.y + (p2.y - p1.y) / 2,
+  };
+}
