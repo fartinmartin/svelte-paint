@@ -11,9 +11,9 @@
 </script>
 
 <Paint
-  width={300}
-  height={100}
-  style="outline: 1px solid tomato;"
+  width={600}
+  height={200}
+  style="margin: 0 auto; outline: 1px solid tomato;"
   bind:sc
   bind:this={sp}
   on:start={(e) => console.log(e.detail.text)}
@@ -49,6 +49,10 @@
   <div>
     <button on:click={sp.save} disabled>save</button>
     <button on:click={sp.load} disabled>load</button>
+  </div>
+  <div>
+    <button on:click={() => sp.play()}>play</button>
+    <button on:click={() => sp.pause()} disabled>pause</button>
   </div>
 </div>
 
