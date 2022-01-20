@@ -1,64 +1,40 @@
 <script>
   import { createEventDispatcher } from "svelte";
   import { Canvas, Layer } from "svelte-canvas";
-  import getInputCoords from "./utils/getInputCoords";
-  import getMidCoords from "./utils/getMidCoords";
-  import isTouch from "./utils/isTouch";
   import { LazyBrush } from "lazy-brush";
   import { render as renderFn } from "./utils/render";
+  import getInputCoords from "./utils/getInputCoords";
 
   // svelte-canvas api pass-through (except autoclear)
   export let sc, width, height, pixelRatio, style, setup;
-  $: render = (p) =>
-    renderFn(p, {
-      isDisabled,
-      isDrawing,
-      brushHasMoved,
-      points,
-      mode,
-      size,
-      cap,
-      color,
-    });
+  $: render = (p) => renderFn(p, { ...input, ...payload });
 
-  // svelte-paint brush settings
+  // svelte-paint
+  let isPlaying = false;
+  let currentStep = 0;
+  let paths = [];
+
+  // lazy-brush
+  let isDisabled = false;
+  let isPressing = false;
+  let isDrawing = false;
+  let mouseHasMoved = false;
+  let brushHasMoved = false;
+  let coords = { x: 0, y: 0 };
+  let currentPath = [];
+
+  // brush settings TODO: allow these to be set initially via props
   let mode = "draw"; // "draw" | "erase" | "fill" | "clear"
   let size = 10;
   let cap = "round"; // "round" | "butt" | "square"
   let color = "tomato";
+  const lazy = new LazyBrush({ radius: 2 }); // TODO: pass as options prop
 
-  // svelte-paint internals
-  let currentPath = [];
-  let currentStep = 0;
-  let paths = [];
-  // let isDrawing = false;
-  let isPlaying = false;
-  // let coords = {
-  //   old: { x: 0, y: 0 },
-  //   dim: { x: 0, y: 0 }, // dumb name for old mid
-  //   mid: { x: 0, y: 0 }, // I'm wondering a) how necessary is it to use quadraticCurveTo() and therefor collecting mid values and b) how much extra cost is it to collect this data?
-  //   cur: { x: 0, y: 0 }, //     (cont.) especially if it's resulting in worse line quality. compare svelte-paint (gaps in lines) to ecc (not so many gaps, eh?)
-  // };
-
-  // lazy-brush
-  let points = [];
-  let isDisabled = false;
-  let isDrawing = false;
-  let isPressing = false;
-  let mouseHasMoved = false;
-  let brushHasMoved = false;
-  let coords = { x: 0, y: 0 };
-
-  // $: isSameCoords = coords.old === coords.cur; // haven't used this yet but I feel like I'll need it? 🤔
-  $: payload = { mode, size, cap, color, currentPath, currentStep };
+  // computed values
+  $: input = { isDisabled, isDrawing, brushHasMoved };
+  $: brush = { mode, size, cap, color };
+  $: payload = { ...brush, currentPath, currentStep };
   // export canUndo and canRedo ??? (also use them in the undo() and redo() fns)
-
-  // lazy-brush
-  const lazy = new LazyBrush({
-    radius: 10,
-    enabled: true,
-    initialPoint: { x: 0, y: 0 },
-  }); // default
 
   // svelte-paint input events
   const dispatch = createEventDispatcher();
@@ -66,99 +42,59 @@
   const down = (e) => {
     e.preventDefault();
 
-    // isDrawing = true;
-    isPressing = true;
-
     coords = getInputCoords(e);
     lazy.update(coords, { both: true });
 
+    isPressing = true;
     mouseHasMoved = true;
     brushHasMoved = lazy.brushHasMoved();
+
+    dispatch("start", { text: "start!", payload });
   };
 
-  const up = (e) => {
+  // TODO: only cancel once BRUSH (not mouse) has left canvas.. this has to do with lazy-brush
+  const cancel = (e) => isPressing && up(e, "cancel");
+  const up = (e, type) => {
     e.preventDefault();
 
     isDrawing = false;
     isPressing = false;
-    points.length = 0;
+    currentPath.length = 0;
 
     const brush = lazy.getBrushCoordinates();
     lazy.update(brush, { both: true });
 
     mouseHasMoved = true;
     brushHasMoved = lazy.brushHasMoved();
+
+    savePath();
+    dispatch("end", { text: "end!", payload, cancel: type === "cancel" });
   };
 
   const move = (e) => {
+    if (!isPressing) return;
     e.preventDefault();
 
     coords = getInputCoords(e);
     const hasChanged = lazy.update(coords);
     isDisabled = !lazy.isEnabled();
 
-    // console.log(isPressing && hasChanged && !isDrawing);
-    // console.log(isDisabled && isPressing);
-    // console.log("====================================");
-    // console.log(isDrawing);
-    // console.log(lazy.brushHasMoved() || isDisabled);
-    // console.log("====================================");
-
     if (
       (isPressing && hasChanged && !isDrawing) ||
       (isDisabled && isPressing)
     ) {
-      console.log(points);
       isDrawing = true;
-      points = [...points, lazy.brush.toObject()];
+      currentPath = [...currentPath, lazy.brush.toObject()];
     }
 
     if (isDrawing && (lazy.brushHasMoved() || isDisabled)) {
-      points = [...points, lazy.brush.toObject()];
+      currentPath = [...currentPath, lazy.brush.toObject()];
     }
 
     mouseHasMoved = true;
     brushHasMoved = lazy.brushHasMoved();
-  };
 
-  // const down = (e) => {
-  //   if (isPlaying) return;
-  //   isDrawing = true;
-  //   coords.old = coords.mid = coords.dim = coords.cur = getInputCoords(e);
-  //   if (mode === "fill") currentPath = [...currentPath, coords]; // instead of currentPath.push(coords)
-  //   dispatch("start", { text: "start!", payload });
-  // };
-
-  // const move = (e) => {
-  //   if (isPlaying) return;
-  //   if (!isDrawing) return;
-  //   lazy.update(getInputCoords(e));
-  //   cords.old = cords.cur;
-  //   cords.cur = lazy.getBrushCoordinates();
-  //   cords.mid = getMidCoords(cords.old, cords.cur);
-  //   console.log(cords);
-  //   // if (isTouch()) e.preventDefault();
-  //   coords.old = coords.cur;
-  //   coords.dim = coords.mid;
-  //   coords.cur = getInputCoords(e);
-  //   coords.mid = getMidCoords(coords.old, coords.mid);
-  //   currentPath = [...currentPath, coords]; // instead of currentPath.push(coords)
-  //   dispatch("draw", { text: "draw!", payload });
-  // };
-
-  // const up = () => {
-  //   if (isPlaying) return;
-  //   isDrawing = false;
-  //   savePath();
-  //   dispatch("end", { text: "end!", payload });
-  // };
-
-  const cancel = () => {
-    if (isPlaying) return;
-    if (!isDrawing) return;
-    isDrawing = false;
-    savePath();
-    dispatch("cancel", { text: "cancel!", payload });
+    dispatch("draw", { text: "draw!", payload });
   };
 
   // svelte-paint internal methods
@@ -260,6 +196,6 @@
 <pre
   style="text-align: center;">isPlaying: {isPlaying} | isDrawing: {isDrawing} | paths: {currentStep} / {paths.length} | mode: {mode} | size: {size} | color: {color} | cap: {cap}</pre>
 
-<pre>{points.length}</pre>
+<pre>{currentPath.length}</pre>
 <pre>{JSON.stringify(coords)}</pre>
 <!-- <pre>{JSON.stringify(cords)}</pre> -->
