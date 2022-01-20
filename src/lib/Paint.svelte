@@ -5,6 +5,13 @@
   import { render as renderFn } from "./utils/render";
   import getInputCoords from "./utils/getInputCoords";
 
+  // onMount(() => {
+  //   // maybe this should/needs to be done in (a fork of) svelte-canvas 🤔
+  //   observeElDimensions(sc.getCanvas(), resizeCanvas({}));
+  // });
+  //
+  // does that mean.. i should move all of this logic to the svelte-canvas fork?
+
   // svelte-canvas api pass-through (except autoclear)
   export let sc, width, height, pixelRatio, style, setup;
   $: render = (p) => renderFn(p, { ...input, ...payload });
@@ -173,6 +180,7 @@
   export const pause = () => {};
 </script>
 
+<!-- style={`${style} width: 100%; max-width: 100%;`} -->
 <Canvas
   {width}
   {height}
