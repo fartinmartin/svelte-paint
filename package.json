@@ -15,9 +15,7 @@
   },
   "type": "module",
   "dependencies": {
-    "lazy-brush": "^1.0.1",
-    "lodash-es": "^4.17.21",
-    "resize-observer-polyfill": "^1.5.1",
-    "svelte-canvas": "^0.7.1"
+    "@fartinmartin/svelte-canvas": "^0.7.1",
+    "lazy-brush": "^1.0.1"
   }
 }
