@@ -1,5 +1,6 @@
 // https://github.com/georgedoescode/VBCanvas/issues/2
 export default function getWindowToCanvas(canvas, x, y) {
+  // ⚠️ TODO: need to account for scroll position?
   var rect = canvas.getBoundingClientRect();
   var screenX = (x - rect.left) * (canvas.width / rect.width);
   var screenY = (y - rect.top) * (canvas.height / rect.height);

@@ -1,6 +1,6 @@
 # svelte-paint
 
-Hoping to combine (some of) the features of [`svelte-canvas`](https://www.npmjs.com/package/svelte-canvas), [`simple-drawing-board`](https://www.npmjs.com/package/simple-drawing-board), and [`vb-canvas`](https://www.npmjs.com/package/vb-canvas).
+Hoping to combine (some of) the features of [`svelte-canvas`](https://www.npmjs.com/package/svelte-canvas), [`simple-drawing-board`](https://www.npmjs.com/package/simple-drawing-board), [`vb-canvas`](https://www.npmjs.com/package/vb-canvas), and [`lazy-brush`](https://www.npmjs.com/package/lazy-brush).
 
 ## Feature list
 
@@ -8,13 +8,14 @@ Hoping to combine (some of) the features of [`svelte-canvas`](https://www.npmjs.
 - [x] brush settings<sup>†</sup>
 - [x] erase mode<sup>†</sup>
 - [x] toDataURL<sup>†</sup>
+- [x] ResizeObserver for responsive canvas<sup>‡</sup>
+- [x] smooth/lazy brush<sup>‖</sup>
 - [ ] history<sup>†</sup>
-- [ ] ResizeObserver for responsive canvas<sup>‡</sup>
 - [ ] fill/paint bucket mode
 - [ ] save/load history (aka path(s) data)
 - [ ] drawing playback
 
-<sup>courtesy of or inspired by <sup>\*</sup>`svelte-canvas`, <sup>†</sup>`simple-drawing-board`, <sup>‡</sup>`vb-canvas`</sup>
+<sup>courtesy of or inspired by <sup>\*</sup>`svelte-canvas`, <sup>†</sup>`simple-drawing-board`, <sup>‡</sup>`vb-canvas` (via `@fartinmartin/svelte-canvas`), <sup>‖</sup>`lazy-brush`</sup>
 
 ## API
 
@@ -24,7 +25,7 @@ Hoping to combine (some of) the features of [`svelte-canvas`](https://www.npmjs.
 | ------------------------- | ------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `width`<sup>\*</sup>      | `Number`                              | `640`                     | `<canvas>` element's width                                                                                                         |
 | `height`<sup>\*</sup>     | `Number`                              | `640`                     | `<canvas>` element's height                                                                                                        |
-| `pixelRatio`<sup>\*</sup> | `Number`                              | `window.devicePixelRatio` | [Pixel density](https://developer.mozilla.org/en-US/docs/Web/API/Window/devicePixelRatio#Examples) of the `<canvas>` element       |
+| `pixelRatio`<sup>\*</sup> | `Number`                              | `window.devicePixelRatio` | `<canvas>` element's [pixel density](https://developer.mozilla.org/en-US/docs/Web/API/Window/devicePixelRatio#Examples).           |
 | `style`<sup>\*</sup>      | `String`                              | `null`                    | CSS style string to be applied to the `<canvas>` element                                                                           |
 | `setup`<sup>\*</sup>      | `({context, width, height}) => {...}` | `null`                    | A function that is called once at initialization (see [`svelte-canvas`'s Layer doc](https://github.com/dnass/svelte-canvas#layer)) |
 
@@ -34,8 +35,8 @@ Hoping to combine (some of) the features of [`svelte-canvas`](https://www.npmjs.
 
 | method                      | param types                                                                             | description                                                       |
 | --------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `getCanvas()`<sup>\*</sup>  |                                                                                         | Returns a reference to the `<canvas>` element                     |
-| `getContext()`<sup>\*</sup> |                                                                                         | Returns the `<canvas>` element's 2D rendering context             |
+| `getCanvas()`<sup>\*</sup>  |                                                                                         | Returns `<canvas>` element                                        |
+| `getContext()`<sup>\*</sup> |                                                                                         | Returns `<canvas>` element's 2D rendering context                 |
 | `redraw()`<sup>\*</sup>     |                                                                                         | Forces a re-render of the canvas                                  |
 | `setMode(mode)`             | `"draw"` \| `"erase"` \| `"fill"`                                                       | Sets drawing mode                                                 |
 | `setColor(color)`           | `String`                                                                                | Sets brush color                                                  |
@@ -53,9 +54,7 @@ Hoping to combine (some of) the features of [`svelte-canvas`](https://www.npmjs.
 | `pause()`                   |                                                                                         | TODO: Pauses `play()` at current step                             |
 | `goto(step)`                | `Number`                                                                                | TODO: Instantly paints history to passed step                     |
 
-<sup><sup>\*</sup>`svelte-canvas` API pass-through.</sup>
-
-<sup><sup>†</sup>`History` object is yet to be defined.</sup>
+<sup><sup>\*</sup>`svelte-canvas` API pass-through. <sup>†</sup>`History` object is yet to be defined.</sup>
 
 ### Events
 

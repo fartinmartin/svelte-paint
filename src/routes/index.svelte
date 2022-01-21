@@ -7,13 +7,24 @@
   onMount(() => disableBodyScroll(sc.getCanvas()));
   onDestroy(() => clearAllBodyScrollLocks());
 
+  const setup = ({ context: ctx, width, height }) => {
+    ctx.fillStyle = "blue";
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = "red";
+    ctx.fillRect(90, 46.25, 20, 20);
+  };
   let sc, sp;
 </script>
 
 <Paint
   width={600}
   height={200}
-  style="margin: 0 auto; outline: 1px solid tomato;"
+  style="width: 100%; margin: 0 auto; outline: 1px solid tomato;"
+  {setup}
   bind:sc
   bind:this={sp}
   on:start={(e) => console.log(e.detail.text)}
@@ -23,6 +34,9 @@
 />
 
 <div>
+  <div>
+    <button on:click={sp.download}>dl</button>
+  </div>
   <div>
     <button on:click={() => sp.setMode("draw")}>draw</button>
     <button on:click={() => sp.setMode("erase")}>erase</button>

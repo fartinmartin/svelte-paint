@@ -14,7 +14,7 @@ export const render = (
     ctx.lineCap = cap;
     ctx.strokeStyle = color;
 
-    // how to handle "dots"???
+    // ⚠️ TODO: how to handle "dots"???
 
     if (isDrawing && (brushHasMoved || isDisabled) && currentPath.length >= 2) {
       let p1 = currentPath[0]; // cur?

@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
-  import { Canvas, Layer } from "svelte-canvas";
+  import { Canvas, Layer } from "@fartinmartin/svelte-canvas";
   import { LazyBrush } from "lazy-brush";
   import { render as renderFn } from "./utils/render";
   import getInputCoords from "./utils/getInputCoords";
@@ -172,8 +172,21 @@
     // drawPathsToStep(currentStep)
   };
 
-  export const toDataURL = ({ type, quality } = {}) => {
+  export const toDataURL = (type = "image/png", quality = 1) => {
     return sc.getCanvas().toDataURL(type, quality);
+  };
+
+  export const download = (
+    type = "image/png",
+    quality = 1,
+    filename = "image.png"
+  ) => {
+    const a = document.createElement("a");
+    a.href = toDataURL(type, quality);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.parentNode.removeChild(a);
   };
 
   export const play = () => {};
