@@ -7,30 +7,25 @@
   onMount(() => disableBodyScroll(sc.getCanvas()));
   onDestroy(() => clearAllBodyScrollLocks());
 
-  const setup = ({ context: ctx, width, height }) => {
-    ctx.fillStyle = "blue";
-    ctx.fillRect(0, 0, width, height);
-    ctx.fillRect(0, 0, width, height);
-    ctx.fillRect(0, 0, width, height);
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.fillStyle = "red";
-    ctx.fillRect(90, 46.25, 20, 20);
-  };
-  let sc, sp;
+  let sc,
+    sp,
+    mode = "draw",
+    color = "tomato",
+    cap = "round",
+    size = 10;
+  $: brush = { mode, color, cap, size };
 </script>
 
 <Paint
   width={600}
   height={200}
+  {...brush}
   style="width: 100%; margin: 0 auto; outline: 1px solid tomato;"
-  {setup}
   bind:sc
   bind:this={sp}
   on:start={(e) => console.log(e.detail.text)}
   on:draw={(e) => console.log(e.detail.text)}
   on:end={(e) => console.log(e.detail.text)}
-  on:cancel={(e) => console.log(e.detail.text)}
 />
 
 <div>
@@ -38,27 +33,27 @@
     <button on:click={sp.download}>dl</button>
   </div>
   <div>
-    <button on:click={() => sp.setMode("draw")}>draw</button>
-    <button on:click={() => sp.setMode("erase")}>erase</button>
-    <button on:click={() => sp.setMode("fill")}>fill</button>
+    <button on:click={() => (mode = "draw")}>draw</button>
+    <button on:click={() => (mode = "erase")}>erase</button>
+    <button on:click={() => (mode = "fill")}>fill</button>
   </div>
   <div>
-    <button on:click={() => sp.setCap("round")}>round</button>
-    <button on:click={() => sp.setCap("butt")}>butt</button>
+    <button on:click={() => (cap = "round")}>round</button>
+    <button on:click={() => (cap = "butt")}>butt</button>
   </div>
   <div>
-    <button on:click={() => sp.setSize(5)}>size 5</button>
-    <button on:click={sp.decSize}>size -</button>
-    <button on:click={sp.incSize}>size +</button>
+    <button on:click={() => (size = 5)}>size 5</button>
+    <button on:click={() => size--}>size -</button>
+    <button on:click={() => size++}>size +</button>
   </div>
   <div>
-    <button on:click={() => sp.setColor("tomato")}>tomato</button>
-    <button on:click={() => sp.setColor("blue")}>blue</button>
+    <button on:click={() => (color = "tomato")}>tomato</button>
+    <button on:click={() => (color = "blue")}>blue</button>
   </div>
   <div>
     <button on:click={sp.clear}>clear</button>
-    <button on:click={sp.undo} disabled>undo</button>
-    <button on:click={sp.redo} disabled>redo</button>
+    <button on:click={sp.undo}>undo</button>
+    <button on:click={sp.redo}>redo</button>
   </div>
   <div>
     <button on:click={sp.save} disabled>save</button>

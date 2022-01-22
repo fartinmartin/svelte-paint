@@ -1,47 +1,40 @@
 <script>
   import { createEventDispatcher } from "svelte";
-  import { Canvas, Layer } from "@fartinmartin/svelte-canvas";
+  import { Canvas, Layer, t } from "@fartinmartin/svelte-canvas";
   import { LazyBrush } from "lazy-brush";
   import { render as renderFn } from "./utils/render";
   import getInputCoords from "./utils/getInputCoords";
 
-  // onMount(() => {
-  //   // maybe this should/needs to be done in (a fork of) svelte-canvas 🤔
-  //   observeElDimensions(sc.getCanvas(), resizeCanvas({}));
-  // });
-  //
-  // does that mean.. i should move all of this logic to the svelte-canvas fork?
-
   // svelte-canvas api pass-through (except autoclear)
   export let sc, width, height, pixelRatio, style, setup;
-  $: render = (p) => renderFn(p, { ...input, ...payload });
+  $: render = (p) => renderFn(p, brush, input, currentPath);
+
+  // brush settings
+  export let mode = "draw", // "draw" | "erase" | "fill" | "clear"
+    size = 10,
+    cap = "round", // "round" | "butt" | "square"
+    color = "tomato",
+    radius = 2,
+    enabled = true,
+    initialPoint = { x: 0, y: 0 };
 
   // svelte-paint
-  let isPlaying = false;
   let currentStep = 0;
+  let currentPath = [];
   let paths = [];
 
   // lazy-brush
+  const lazy = new LazyBrush({ radius, enabled, initialPoint }); // include in $: brush ??
   let isDisabled = false;
   let isPressing = false;
   let isDrawing = false;
-  let mouseHasMoved = false;
-  let brushHasMoved = false;
-  let coords = { x: 0, y: 0 };
-  let currentPath = [];
-
-  // brush settings TODO: allow these to be set initially via props
-  let mode = "draw"; // "draw" | "erase" | "fill" | "clear"
-  let size = 10;
-  let cap = "round"; // "round" | "butt" | "square"
-  let color = "tomato";
-  const lazy = new LazyBrush({ radius: 2 }); // TODO: pass as options prop
 
   // computed values
-  $: input = { isDisabled, isDrawing, brushHasMoved };
+  $: input = { isDisabled, isPressing, isDrawing };
   $: brush = { mode, size, cap, color };
   $: payload = { ...brush, currentPath, currentStep };
-  // export canUndo and canRedo ??? (also use them in the undo() and redo() fns)
+  $: undoable = currentStep > 0;
+  $: redoable = currentStep >= paths.length;
 
   // svelte-paint input events
   const dispatch = createEventDispatcher();
@@ -49,12 +42,8 @@
   const down = (e) => {
     e.preventDefault();
 
-    coords = getInputCoords(e);
-    lazy.update(coords, { both: true });
-
+    lazy.update(getInputCoords(e), { both: true });
     isPressing = true;
-    mouseHasMoved = true;
-    brushHasMoved = lazy.brushHasMoved();
 
     dispatch("start", { text: "start!", payload });
   };
@@ -66,13 +55,9 @@
 
     isDrawing = false;
     isPressing = false;
-    currentPath.length = 0;
 
     const brush = lazy.getBrushCoordinates();
     lazy.update(brush, { both: true });
-
-    mouseHasMoved = true;
-    brushHasMoved = lazy.brushHasMoved();
 
     savePath();
     dispatch("end", { text: "end!", payload, cancel: type === "cancel" });
@@ -82,8 +67,7 @@
     if (!isPressing) return;
     e.preventDefault();
 
-    coords = getInputCoords(e);
-    const hasChanged = lazy.update(coords);
+    const hasChanged = lazy.update(getInputCoords(e));
     isDisabled = !lazy.isEnabled();
 
     if (
@@ -98,18 +82,14 @@
       currentPath = [...currentPath, lazy.brush.toObject()];
     }
 
-    mouseHasMoved = true;
-    brushHasMoved = lazy.brushHasMoved();
-
     dispatch("draw", { text: "draw!", payload });
   };
 
   // svelte-paint internal methods
   const savePath = () => {
-    paths = [...paths, payload]; // instead of paths.push(payload)
+    paths = [...paths, { ...brush, points: [...currentPath] }]; // instead of paths.push(payload)
+    currentPath.length = 0;
     currentStep++;
-    // console.log(currentStep, payload);
-    // console.log(paths);
     dispatch("savePath", { text: "savePath!", payload });
   };
 
@@ -120,33 +100,27 @@
 
   const drawPathsToStep = (step = currentStep) => {
     clearCanvas();
-    // svelte-canvas render fn?
   };
 
   // svelte-paint external methods
-  export const setMode = (m) => (mode = m);
-  export const setColor = (c) => (color = c);
-  export const setCap = (c) => (cap = c);
-
-  export const setSize = (s) => (size = s);
-  export const decSize = () => size--;
-  export const incSize = () => size++;
-
   export const clear = () => {
     clearCanvas();
-    savePath("clear");
+    savePath("clear"); // "clear" does nothing right now :D
   };
 
+  export const canUndo = () => undoable;
+  export const canRedo = () => redoable;
+
   export const undo = () => {
-    if (currentStep === 0) return;
+    if (!undoable) return;
     currentStep--;
-    // drawPathsToStep(currentStep)
+    drawPathsToStep(currentStep);
   };
 
   export const redo = () => {
-    if (currentStep >= paths.length - 1) return; // could be off by +/- 1 here 😬
+    if (!redoable) return;
     currentStep++;
-    // drawPathsToStep(currentStep)
+    drawPathsToStep(currentStep);
   };
 
   export const goto = (step) => {
@@ -193,7 +167,6 @@
   export const pause = () => {};
 </script>
 
-<!-- style={`${style} width: 100%; max-width: 100%;`} -->
 <Canvas
   {width}
   {height}
@@ -214,9 +187,11 @@
   <Layer {setup} {render} />
 </Canvas>
 
-<pre
-  style="text-align: center;">isPlaying: {isPlaying} | isDrawing: {isDrawing} | paths: {currentStep} / {paths.length} | mode: {mode} | size: {size} | color: {color} | cap: {cap}</pre>
-
-<pre>{currentPath.length}</pre>
-<pre>{JSON.stringify(coords)}</pre>
-<!-- <pre>{JSON.stringify(cords)}</pre> -->
+<pre>isPressing: {isPressing}</pre>
+<pre>isDrawing: {isDrawing}</pre>
+<pre>paths: {currentStep} / {paths.length}</pre>
+<pre>mode: {mode}</pre>
+<pre>size: {size}</pre>
+<pre>color: {color}</pre>
+<pre>cap: {cap}</pre>
+<pre>currentPath.length: {currentPath.length}</pre>
