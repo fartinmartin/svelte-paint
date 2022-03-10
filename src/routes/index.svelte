@@ -20,12 +20,12 @@
   width={600}
   height={200}
   {...brush}
-  style="width: 100%; margin: 0 auto; outline: 1px solid tomato;"
+  style="width: 100%; aspect-ratio: 3 / 1; margin: 0 auto; outline: 1px solid tomato;"
   bind:sc
   bind:this={sp}
   on:start={(e) => console.log(e.detail.text)}
   on:draw={(e) => console.log(e.detail.text)}
-  on:end={(e) => console.log(e.detail.text)}
+  on:end={(e) => console.log(e.detail.text, e.detail.cancel ? "cancel! " : " ")}
 />
 
 <div>

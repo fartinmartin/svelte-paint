@@ -2,12 +2,18 @@
   import { createEventDispatcher } from "svelte";
   import { Canvas, Layer, t } from "@fartinmartin/svelte-canvas";
   import { LazyBrush } from "lazy-brush";
-  import { render as renderFn } from "./utils/render";
+  import { draw as drawFn, playback as playbackFn } from "./utils/render";
   import getInputCoords from "./utils/getInputCoords";
 
   // svelte-canvas api pass-through (except autoclear)
-  export let sc, width, height, pixelRatio, style, setup;
-  $: render = (p) => renderFn(p, brush, input, currentPath);
+  export let width = 640,
+    height = 640,
+    style = undefined,
+    sc = undefined,
+    pixelRatio = undefined,
+    setup = undefined;
+  $: draw = (c) => drawFn(c, brush, isDrawing, currentPath);
+  $: playback = (c) => playbackFn(c, paths);
 
   // brush settings
   export let mode = "draw", // "draw" | "erase" | "fill" | "clear"
@@ -19,6 +25,7 @@
     initialPoint = { x: 0, y: 0 };
 
   // svelte-paint
+  export let isPlaying = false;
   let currentStep = 0;
   let currentPath = [];
   let paths = [];
@@ -44,6 +51,10 @@
 
     lazy.update(getInputCoords(e), { both: true });
     isPressing = true;
+
+    // for drawing dots
+    isDrawing = true; // could change to new variable, say "isDown" or "isDot", then check for it in render fn, that way it would be distinct from "isDrawing" which should happen only once mouse has left the "radius"? this might just be semantics at this point...
+    currentPath = [...currentPath, lazy.brush.toObject()];
 
     dispatch("start", { text: "start!", payload });
   };
@@ -184,7 +195,7 @@
   on:touchcancel={cancel}
   on:gesturestart={cancel}
 >
-  <Layer {setup} {render} />
+  <Layer {setup} render={isPlaying ? playback : draw} />
 </Canvas>
 
 <pre>isPressing: {isPressing}</pre>
