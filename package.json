@@ -15,7 +15,7 @@
   },
   "type": "module",
   "dependencies": {
-    "@fartinmartin/svelte-canvas": "^0.7.5",
+    "@fartinmartin/svelte-canvas": "^0.0.1",
     "lazy-brush": "^1.0.1"
   }
 }

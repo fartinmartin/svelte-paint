@@ -41,7 +41,7 @@
   $: brush = { mode, size, cap, color };
   $: payload = { ...brush, currentPath, currentStep };
   $: undoable = currentStep > 0;
-  $: redoable = currentStep >= paths.length;
+  $: redoable = currentStep < paths.length;
 
   // svelte-paint input events
   const dispatch = createEventDispatcher();
@@ -61,6 +61,7 @@
 
   // TODO: only cancel once BRUSH (not mouse) has left canvas.. this has to do with lazy-brush
   const cancel = (e) => isPressing && up(e, "cancel");
+
   const up = (e, type) => {
     e.preventDefault();
 
@@ -111,6 +112,8 @@
 
   const drawPathsToStep = (step = currentStep) => {
     clearCanvas();
+    const ctx = sc.getContext();
+    paths.slice(0, step).forEach((path) => drawFn(ctx, path));
   };
 
   // svelte-paint external methods
@@ -184,6 +187,7 @@
   {pixelRatio}
   {style}
   autoclear={false}
+  isStatic={true}
   bind:this={sc}
   on:mousedown={down}
   on:touchstart={down}
@@ -206,3 +210,9 @@
 <pre>color: {color}</pre>
 <pre>cap: {cap}</pre>
 <pre>currentPath.length: {currentPath.length}</pre>
+
+{#each paths as { points }, index}
+  <pre style={index + 1 === currentStep ? "color: red" : ""}>{JSON.stringify(
+      points[0]
+    )}</pre>
+{/each}

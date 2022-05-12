@@ -22,6 +22,7 @@ export const playback = async ({ context: ctx }, paths, ms = 5) => {
 };
 
 export const draw = ({ context: ctx }, brush, isDrawing, currentPath) => {
+  // console.log(brush);
   if (!isDrawing) return;
 
   setBrush(ctx, brush);
@@ -67,7 +68,7 @@ const drawPath = async (ctx, path, { cap, size }, ms) => {
 };
 
 const drawDot = (ctx, { x, y }, { cap, size }) => {
-  console.log("drawDot()!");
+  // console.log("drawDot()!");
   ctx.beginPath();
   const r = size / 2;
   if (cap === "round") ctx.arc(x, y, r, 0, 2 * Math.PI);
